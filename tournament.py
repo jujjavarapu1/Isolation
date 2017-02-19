@@ -164,18 +164,29 @@ def main():
                    Agent(CustomPlayer(score_fn=custom_score, **CUSTOM_ARGS), "Student")]
 
     print(DESCRIPTION)
-    for agentUT in test_agents:
-        print("")
-        print("*************************")
-        print("{:^25}".format("Evaluating: " + agentUT.name))
-        print("*************************")
+    # for agentUT in test_agents:
+        # print("")
+        # print("*************************")
+        # print("{:^25}".format("Evaluating: " + agentUT.name))
+        # print("*************************")
 
-        agents = random_agents + mm_agents + ab_agents + [agentUT]
-        win_ratio = play_round(agents, NUM_MATCHES)
+        # agents = random_agents + mm_agents + ab_agents + [agentUT]
+        # win_ratio = play_round(agents, NUM_MATCHES)
 
-        print("\n\nResults:")
-        print("----------")
-        print("{!s:<15}{:>10.2f}%".format(agentUT.name, win_ratio))
+        # print("\n\nResults:")
+        # print("----------")
+        # print("{!s:<15}{:>10.2f}%".format(agentUT.name, win_ratio))
+
+    print("")
+    print("*************************")
+    print("{:^25}".format("Evaluating: " + test_agents[-1].name))
+    print("*************************")
+
+    win_ratio = play_round(test_agents, NUM_MATCHES)
+
+    print("\n\nResults:")
+    print("----------")
+    print("{!s:<15}{:>10.2f}%".format(test_agents[-1].name, win_ratio))
 
 
 if __name__ == "__main__":

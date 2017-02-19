@@ -14,6 +14,100 @@ class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
 
+def move_is_legal(move, board):
+    row, col = move
+    return 0 <= row < len(board) and \
+           0 <= col < len(board[0]) and \
+           board[row][col] == 0
+
+def get_legal_moves(move, board):
+    #Legal moves from a move.
+    directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2),
+                  (1, -2),  (1, 2), (2, -1),  (2, 1)]
+    (r,c) = move
+    valid_moves = [(r+dr,c+dc) for dr, dc in directions if move_is_legal((r+dr, c+dc), board)]
+    return valid_moves
+
+def box_value(game, box):
+    (x,y) = box
+    value = 1000
+    #Box Values
+    if (x-2) >= 0:
+        if (y-1) >= 0 :
+            value += 1
+        if (y+1) < game.width:
+            value += 1
+    if (x+2) < game.height:
+        if (y-1) >= 0 :
+            value += 1
+        if (y+1) < game.width:
+            value += 1
+    if (y-2) >= 0:
+        if (x-1) >= 0 :
+            value += 1
+        if (x+1) < game.height:
+            value += 1
+    if (y+2) < game.width:
+        if (x-1) >= 0 :
+            value += 1
+        if (x+1) < game.height:
+            value += 1
+    return value
+
+def dfs_board(move, board):
+    (x, y) = move
+    if board[x][y]:
+        return 0
+    else:
+        board[x][y] = 1
+        legal_moves = get_legal_moves(move,board)
+        dfs_moves_count = [0]
+        for m in legal_moves:
+            dfs_moves_count.append(dfs_board(m, board))
+        return max(dfs_moves_count) + 1
+
+
+def heuristic1(game, player):
+
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+    common_moves = list(set(own_moves) & set(opp_moves))
+    #If one of the move can be occupied by opposition
+    if (len(common_moves) != 0) and (game.inactive_player == player):
+        return float(len(own_moves) - len(opp_moves) - 1)
+    else:
+        return float(len(own_moves) - len(opp_moves))
+
+def heuristic2(game, player):
+
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+    own_move_values = 0
+    opp_move_values = 0
+
+    for move in own_moves:
+        own_move_values += box_value(game, move)
+    for move in opp_moves:
+        opp_move_values += box_value(game, move)
+    return float(own_move_values - opp_move_values)
+
+def heuristic3(game, player):
+
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+
+    own_dfs_moves_count = [0]
+    # From each move to how many move we can transverse.
+    for move in own_moves:
+        board = game.copy_board()
+        own_dfs_moves_count.append(dfs_board(move, board))
+
+    opp_dfs_moves_count = [0]
+    for move in opp_moves:
+        board = game.copy_board()
+        opp_dfs_moves_count.append(dfs_board(move, board))
+
+    return float(1000*(len(own_moves) - len(opp_moves)) + sum(own_dfs_moves_count))
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -35,12 +129,18 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
 
-    # TODO: finish this function!
-    if player == game.__player_1__:
-        return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.__player_2__)))
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    if (len(game.get_blank_spaces()) >= (game.width * game.height)/2):
+        #Using heuristic1 in intial part of game.
+        return heuristic1(game, player)
     else:
-        return float(len(game.get_legal_moves(player)) - len(game.get_legal_moves(game.__player_1__)))
-    # return float(len(game.get_legal_moves(player)))
+        #Using heuristic3 in middle part of game.
+        return heuristic3(game, player)
 
 
 class CustomPlayer:
@@ -74,7 +174,7 @@ class CustomPlayer:
     """
 
     def __init__(self, search_depth=3, score_fn=custom_score,
-                 iterative=True, method='minimax', timeout=10.):
+                 iterative=True, method='minimax', timeout=15.):
         self.search_depth = search_depth
         self.iterative = iterative
         self.score = score_fn
@@ -121,8 +221,6 @@ class CustomPlayer:
         self.time_left = time_left
         best_move = None
         best_score = 0
-
-        # TODO: finish this function!
 
         # Perform any required initializations, including selecting an initial
         # move from the game board (i.e., an opening book), or returning
@@ -188,10 +286,8 @@ class CustomPlayer:
         tuple(int, int)
             The best move for the current branch; (-1, -1) for no legal moves
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
+        if self.time_left() < (self.TIMER_THRESHOLD):
             raise Timeout()
-
-        # TODO: finish this function!
 
         if depth == 0:
             return (self.score(game, self), game.get_player_location(game.inactive_player))
@@ -244,11 +340,8 @@ class CustomPlayer:
         tuple(int, int)
             The best move for the current branch; (-1, -1) for no legal moves
         """
-        if self.time_left() < self.TIMER_THRESHOLD:
+        if self.time_left() < (self.TIMER_THRESHOLD):
             raise Timeout()
-
-        # TODO: finish this function!
-
 
         if depth == 0:
             return self.score(game, self), game.get_player_location(game.inactive_player)

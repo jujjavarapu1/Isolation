@@ -122,6 +122,14 @@ class Board(object):
         new_board.apply_move(move)
         return new_board
 
+    #Used this methods in heuristic3
+    def is_box_blank(self, box):
+        (row,col) = box
+        return self.__board_state__[row][col] == Board.BLANK
+
+    def copy_board(self):
+        return deepcopy(self.__board_state__)
+
     def move_is_legal(self, move):
         """
         Test whether a move is legal in the current game state.
